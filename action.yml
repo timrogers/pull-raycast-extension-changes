@@ -1,5 +1,5 @@
 name: 'Pull Raycast Extension Changes'
-description: Store a custom Raycast extension in your own repo, and automatically create a PR to that repo whenever any changes are made to your extension "upstream" in the `raycast/extensions` repo
+description: Store a Raycast extension in your own repo, and automatically create a PR with changes made in `raycast/extensions`
 branding:
   icon: cast
   color: blue
