@@ -5,7 +5,7 @@ branding:
   color: blue
 inputs:
   github_access_token:
-    description: A GitHub access token which will be used to create a PR to your repo with any changes. You can pass in `${{ secrets.GITHUB_TOKEN }}` which is automatically provided by the GitHub Actions runtime.
+    description: A GitHub access token which will be used to create a PR to your repo with any changes
     required: true
   extension_name:
     description: The name of your extension. This should be the name of the folder in the `raycast/extensions` repo under `extensions/` where your extension lives.
@@ -49,6 +49,7 @@ runs:
         else
           echo "1"
         fi)
+      shell: bash
       working-directory: my-extension
     - name: Stage changes, ready to commit
       run: git add --all .
