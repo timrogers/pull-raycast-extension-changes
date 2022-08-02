@@ -46,4 +46,4 @@ jobs:
 2. Update the `extension_name` variable, marked `CHANGE ME`, adding the name of your extension.
 3. Add, commit and push your `.github/workflows/pull_from_upstream.yml` file to your repo.
 4. The action will automatically check for updates every 24 hours once the YML is in your primary Git branch. You can also trigger it manually from the "Actions" tab of your repo.
-5. If there are any upstream changes, a PR will automatically be created. This PR should be merged without modifications so that your repo reflects what is upstream in the `raycast/extensions` repo.
+5. If the upstream repository was updated more recently than your own repository, and there are changes, a PR will automatically be created. This PR should be merged without modifications so that your repo reflects what is upstream in the `raycast/extensions` repo. 
