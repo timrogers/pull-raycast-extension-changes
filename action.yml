@@ -21,25 +21,47 @@ runs:
       uses: actions/checkout@v3
       with:
         path: my-extension
+    - name: Get timestamp of most recent local changes
+      id: get_most_recent_local_changes_timestamp
+      run: |
+        echo "::set-output name=timestamp::$(git --no-pager log -1 --pretty="format:%cd" --date=format:"%Y-%m-%d %H:%M:%S")"
+      shell: bash
+      working-directory: my-extension
     - name: Check out the `raycast/extensions` repo
       uses: actions/checkout@v3
       with:
         repository: raycast/extensions
         path: raycast-extensions
+    - name: Get timestamp of most recent upstream changes
+      id: get_most_recent_upstream_changes_timestamp
+      run: |
+        echo "::set-output name=timestamp::$(git --no-pager log -1 --pretty="format:%cd" --date=format:"%Y-%m-%d %H:%M:%S" extensions/${{ inputs.extension_name }})"
+      shell: bash
+      working-directory: raycast-extensions
     - name: Get SHA of most recent upstream extension changes
-      id: get_most_recent_changes_sha
+      id: get_most_recent_upstream_changes_sha
       run: |
         echo "::set-output name=SHA::$(git --no-pager log -1 --format="%H" extensions/${{ inputs.extension_name }})"
       shell: bash
       working-directory: raycast-extensions
+    - name: Print completion message if there are no relevant upstream changes
+      run: echo "No changes to pull - local repository was updated at ${{ steps.get_most_recent_local_changes_sha.outputs.timestamp }} and upstream repository was updated earlier at ${{ steps.get_most_recent_upstream_changes_sha.outputs.timestamp }}"
+      shell: bash
+      if: steps.get_most_recent_upstream_changes_sha.outputs.timestamp <= steps.get_most_recent_local_changes_sha.outputs.timestamp
+    - name: Print status message if there are relevant upstream changes
+      run: echo "Changes detected - local repository was updated at ${{ steps.get_most_recent_local_changes_sha.outputs.timestamp }} and upstream repository was updated later at ${{ steps.get_most_recent_upstream_changes_sha.outputs.timestamp }}"
+      shell: bash
+      if: steps.get_most_recent_upstream_changes_sha.outputs.timestamp > steps.get_most_recent_local_changes_sha.outputs.timestamp
     - name: Create branch for any upstream changes
-      run: git checkout -b upstream-${{ steps.get_most_recent_changes_sha.outputs.SHA }}
+      run: git checkout -b upstream-${{ steps.get_most_recent_upstream_changes_sha.outputs.SHA }}
       shell: bash
       working-directory: my-extension
+      if: steps.get_most_recent_upstream_changes_sha.outputs.timestamp > steps.get_most_recent_local_changes_sha.outputs.timestamp
     - name: Copy upstream changes
       run: cp -R extensions/${{ inputs.extension_name }}/* ../my-extension
       shell: bash
       working-directory: raycast-extensions
+      if: steps.get_most_recent_upstream_changes_sha.outputs.timestamp > steps.get_most_recent_local_changes_sha.outputs.timestamp
     - name: Check for changes
       id: check_changes
       run: |
@@ -51,34 +73,35 @@ runs:
         fi)
       shell: bash
       working-directory: my-extension
+      if: steps.get_most_recent_upstream_changes_sha.outputs.timestamp > steps.get_most_recent_local_changes_sha.outputs.timestamp
     - name: Stage changes, ready to commit
       run: git add --all .
       shell: bash
       working-directory: my-extension
-      if: steps.check_changes.outputs.changed == 1
+      if: steps.get_most_recent_upstream_changes_sha.outputs.timestamp > steps.get_most_recent_local_changes_sha.outputs.timestamp && steps.check_changes.outputs.changed == 1
     - name: Configure Git user information so we can commit
       run: git config user.name 'github-actions[bot]' && git config user.email 'github-actions[bot]@users.noreply.github.com'
       shell: bash
       working-directory: my-extension
-      if: steps.check_changes.outputs.changed == 1
+      if: steps.get_most_recent_upstream_changes_sha.outputs.timestamp > steps.get_most_recent_local_changes_sha.outputs.timestamp && steps.check_changes.outputs.changed == 1
     - name: Commit upstream changes to branch
-      run: git commit -m 'Sync upstream changes from ${{ steps.get_most_recent_changes_sha.outputs.SHA }} and earlier'
+      run: git commit -m 'Sync upstream changes from ${{ steps.get_most_recent_upstream_changes_sha.outputs.SHA }} and earlier'
       shell: bash
       working-directory: my-extension
-      if: steps.check_changes.outputs.changed == 1
+      if: steps.get_most_recent_upstream_changes_sha.outputs.timestamp > steps.get_most_recent_local_changes_sha.outputs.timestamp && steps.check_changes.outputs.changed == 1
     - name: Push upstream changes to our repo
-      run: git push -f origin upstream-${{ steps.get_most_recent_changes_sha.outputs.SHA }}
+      run: git push -f origin upstream-${{ steps.get_most_recent_upstream_changes_sha.outputs.SHA }}
       shell: bash
       working-directory: my-extension
-      if: steps.check_changes.outputs.changed == 1
+      if: steps.get_most_recent_upstream_changes_sha.outputs.timestamp > steps.get_most_recent_local_changes_sha.outputs.timestamp && steps.check_changes.outputs.changed == 1
     - name: Create pull request (if it doesn't already exist)
       id: create_pull_request
       # If there is already a PR for this branch, then we'll skip creating a new PR and return the URL of the existing one
       run: |
-        pr_url="$(gh pr create --head upstream-${{ steps.get_most_recent_changes_sha.outputs.SHA }} --title "Sync upstream changes from ${{ steps.get_most_recent_changes_sha.outputs.SHA }} and earlier" --body "This PR should be merged without modifications so that this repo reflects what is upstream in the raycast/extensions repo.")"
+        pr_url="$(gh pr create --head upstream-${{ steps.get_most_recent_upstream_changes_sha.outputs.SHA }} --title "Sync upstream changes from ${{ steps.get_most_recent_upstream_changes_sha.outputs.SHA }} and earlier" --body "This PR should be merged without modifications so that this repo reflects what is upstream in the raycast/extensions repo.")"
         echo "::set-output name=pr_url::$pr_url"
       shell: bash
       working-directory: my-extension
       env:
         GITHUB_TOKEN: ${{ inputs.github_access_token }}
-      if: steps.check_changes.outputs.changed == 1
+      if: steps.get_most_recent_upstream_changes_sha.outputs.timestamp > steps.get_most_recent_local_changes_sha.outputs.timestamp && steps.check_changes.outputs.changed == 1
