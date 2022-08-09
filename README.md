@@ -6,7 +6,7 @@ This simple __GitHub Action__ allows you to store a [custom extension](https://g
 
 When you start writing a Raycast extension, you'll naturally create your own repo with its own issues, pull requests, readme, continuous integration setup, etc.
 
-However, when you want to release the extension in the Raycast Store, it has to be committed to the [`raycast/extensions` repo]((https://github.com/raycast/extensions). 
+However, when you want to release the extension in the Raycast Store, it has to be committed to the [`raycast/extensions` repo](https://github.com/raycast/extensions). 
 
 Getting code between your repo and the central one is a bit of a pain. When you make changes, you'll need to copy them across to the central repo, and occasionally changes can be made by the Raycast team when reviewing a pull request that you want to bring back to your own repo.
 
